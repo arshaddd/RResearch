@@ -1,0 +1,177 @@
+---
+title: "Assignment1"
+author: "Arshad!"
+date: "13/07/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+1:)   Loading and processing the data
+
+```{r}
+
+rm(list=ls())
+
+library(dplyr)
+
+library(lubridate)
+
+library(ggplot2)
+
+##   Set working Directory
+
+setwd("C:/Users/arsha/OneDrive/Desktop/reproduceable_research/assignment1")
+
+mydata <- read.csv("repdata_data_activity/activity.csv", header=TRUE, na.strings="NA")
+
+##cleanup date class
+
+mydata$date <-ymd(mydata$date)
+
+##Remove NA
+
+mydata1 <- na.omit(mydata)
+
+summary(mydata1)
+
+str(mydata1)
+
+head(mydata1)
+
+tail(mydata1)
+
+
+```
+
+2:)   Make an histtogram of the total no of steps taken each day
+
+```{r}
+
+mydata2 <- summarize(group_by(mydata1,date),daily.step=sum(steps))
+
+mean.mydata <- as.integer(mean(mydata2$daily.step))
+
+median.mydata <- as.integer(median(mydata2$daily.step))
+
+plot.steps.day <- ggplot(mydata2, aes(x=daily.step)) +
+  geom_histogram(binwidth = 600, aes(y=..count.., fill=..count..)) +
+  geom_vline(xintercept=mean.mydata, colour = "Black", linetype="dashed", size=1) +
+  geom_vline(xintercept=median.mydata, color = "red", linetype="dotted", size=1) +
+  labs(title="Number of Steps Taken Each Day", y="Frequency", x="Steps Each Day")
+
+ plot.steps.day
+  
+
+```
+
+3:)   Calculate Mean and Median of Total no of steps taken per day...
+
+```{r}
+
+
+##   Calculating Mean 
+
+mean.mydata
+
+##   Calculating Median
+
+median.mydata
+
+```
+
+4:)   Makeing a time series plot avg no of steps taken
+
+```{r}
+
+mydata3 <- mydata1 %>% group_by(interval) %>% summarize(mean.step=mean(steps))
+
+plot.step.interval <- ggplot(mydata3, aes(x=interval, y=mean.step)) +
+  geom_line(color="blue")  +
+  labs(title="Avg no of Steps Taken 5-min Interval", y="Avg no of Steps", x="5-min Interval Time Series")
+
+plot.step.interval
+
+```
+
+5:)   Max no of step taken in avg, 5-min Interval
+
+```{r}
+
+anab <- which.max(mydata3$mean.step)
+
+anab.step <- mydata3$interval[anab]
+
+sprintf("Max no of Steps is from %gth 5-min Interval", anab.step)
+
+```
+
+6:)  Planning for Imputing the missing data
+
+```{r}
+
+# Total no of missing values in Dataset.
+sum(is.na(mydata))
+
+fas.mydata <- mydata
+
+fas.mydata$steps[is.na(fas.mydata$steps)] <- mean(fas.mydata$steps,na.rm=TRUE)
+
+fas.mydata$steps <- as.numeric(fas.mydata$steps)
+
+fas.mydata$interval <- as.numeric(fas.mydata$interval)
+
+colSums(is.na(fas.mydata))
+
+# Creating a new Dataset with missing values of original Dataset 
+
+summary(fas.mydata)
+
+```
+
+7:)   Histogram of the total number of steps taken each day after missing values are imputed
+
+```{r}
+
+fas.mydata2 <- summarize(group_by(fas.mydata,date), daily.step=sum(steps))
+
+mean.fas <- as.integer(mean(fas.mydata2$daily.step))
+
+mean.fas
+
+median.fas <- as.integer(median(fas.mydata2$daily.step))
+
+median.fas
+
+plot.steps.day <- ggplot(fas.mydata2, aes(x=daily.step)) +
+  geom_histogram(binwidth = 600, aes(y=..count.., fill=..count..)) +
+  geom_vline(xintercept=mean.fas, color = "Black", linetype="dashed", size=1) +
+  geom_vline(xintercept=median.fas, color = "red", linetype="dotted", size=1) +
+  labs(title="Number of Steps Taken Each Day", y="Frequency", x="Steps Each Day")
+
+plot.steps.day
+
+```
+
+8:)   Finding the difference in activity patterns between weekdays and weekends
+
+```{r}
+
+fas.mydata$day <- ifelse(weekdays(fas.mydata$date) %in% c("Saturday", "Sunday"), "weekday", "weekend")
+
+fas.df <- fas.mydata %>% group_by(interval,day) %>% summarise(mean.step=mean(steps))
+
+plot.weekday.interval <- ggplot(fas.df, aes(x=interval, y=mean.step, color=day)) +
+   facet_grid(day~.) +
+   geom_line() +
+  labs(title = "Avg no of steps taken vs 5-min interval on Weekdays or Weekend", y="Avg no of steps", x= "5-min interval time")
+
+plot.weekday.interval
+
+
+```
